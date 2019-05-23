@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Fat Slim and Drunk</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<div class="fundo">
+<img src="Title.png" height="200">
+</div>
+<style>
+.fundo{
+    display: block;
+	text-align: center;
+	height: 200px;
+	
+}
+canvas {
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    width: 960px;
+	border:30px solid #0061ff;
+    
+	background-image: url("fundoStart.jpg");
+	background-size: 100%;
+}
+#botoes {
+  padding-left: 0;
+    padding-right: 0;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    width: 540px;
+    
+    bottom: 0;
+    left: 0;
+    right: 0;
+  background-color: rgba(0, 0, 255, 0.2); ;
+  
+ 
+}
+
+.button {
+  display: inline-block;
+  padding: 40px 60px;
+  font-size: 35px;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  outline: none;
+  color: #fff;
+  background-color: #4CAF50;
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 9px #999;
+}
+.button2 {  
+  font-size: 44px;
+  background-color: #ff0000
+    
+}
+.button:hover {background-color: #3e8e41}
+
+.button:active {
+  background-color: #3e8e41;
+  box-shadow: 0 5px #666;
+  transform: translateY(4px);
+}
+.button2:hover {background-color: #870000}
+
+.button2:active {
+  background-color: #6b0000;
+  
+}
+body {
+  background-image: url("Fundo-do-Site.png");
+  background-repeat: repeat;
+  background-size: 20%;
+  touch-action: manipulation;
+  
+}
+
+</style>
+
+</head>
+
+<body onload="startmenu()" >
+<div class="wrapper" >
+	
+	<canvas class="box" id="cv"></canvas>
+	<div class="box" id="botoes" style="text-align:center;">
+		
+		  <button id="1" class="button" onmousedown="moveup()"  ontouchstart="moveup()">UP</button><br><br>
+		  <button id="2" class="button" onmousedown="moveleft()"  ontouchstart="moveleft()">LEFT</button>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		  <button id="3" class="button" onmousedown="moveright()" ontouchstart="moveright()">RIGHT</button><br><br>
+		  <button id="4" class="button" onmousedown="movedown()"  ontouchstart="movedown()">DOWN</button><br><br><br><br>
+		  <button class="button button2" onclick="startGame()">Start Game</button> 
+		  
+		  
+		
+	
+	</div>
+</div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js" type="text/javascript"></script>
+<script>
+
+var myGamePiece;
+var myObstacles = [];
+var myScore;
+var myBackground;
+var ongoing=false;
+var isDrunk=false;
+var mySound;
+var speed=1;
+
+function startmenu(){
+	myGameArea.start();
+	queryHighScores();
+}
+
+
+function startGame() {
+	if(ongoing!=true){	
+		
+		myObstacles=[];
+		myGameArea.start2();
+		myGamePiece = new component(70, 98, "fatguy.png", 10, 120,"image","fatguy");
+		myScore = new component("30px", "Consolas", "black", 40, 40, "text");
+		myBackground = new component(967, 544, "fundo.jpg", 0, 0, "background");
+		mySound = new sound("scream.mp3");
+	}
+    
+}
+
+
+var myGameArea = {
+    //canvas : document.createElement("canvas"),
+	canvas : document.getElementById("cv"),
+	//abrir o canvas
+    start : function() {
+        //this.canvas.width = 480;
+        //this.canvas.height = 270;
+		this.canvas.width = 960;
+        this.canvas.height = 544;
+		this.context = this.canvas.getContext("2d");
+        document.body.insertBefore(this.canvas, document.body.childNodes[1]);	
+	},		
+		//comecar o jogo mesmo
+	start2: function(){ 
+		ongoing=true;
+		speed=1;
+        this.frameNo = 0;
+        this.interval = setInterval(updateGameArea, 20);
+		this.score=0;
+		document.getElementById("1").addEventListener( 'mouseup', clearmove,false);
+		document.getElementById("2").addEventListener( 'mouseup', clearmove,false);
+		document.getElementById("3").addEventListener( 'mouseup', clearmove,false);
+		document.getElementById("4").addEventListener( 'mouseup', clearmove,false);
+		window.addEventListener("keydown", function(e) {
+        // space and arrow keys
+        if([32, 37, 38, 39, 40].indexOf(e.keyCode) > -1) {
+            e.preventDefault();
+        }
+        }, false);
+	},
+    clear : function() {
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    },
+    stop : function() {
+		ongoing=false;
+        clearInterval(this.interval);
+    }
+}
+
+function component(width, height, color, x, y,type,nome) {
+	this.type = type;
+	if (type == "image"|| type == "background") {
+		this.image = new Image();
+		this.image.src = color;
+	}
+	this.nome=nome;
+    this.width = width;
+    this.height = height;
+    this.speedX = 0;
+    this.speedY = 0;    
+    this.x = x;
+    this.y = y;    
+    this.update = function() {
+        ctx = myGameArea.context;
+		if (this.type == "text") {
+		  ctx.font = this.width + " " + this.height;
+		  ctx.fillStyle = color;
+		  ctx.fillText(this.text, this.x, this.y);
+		} else if (this.type == "image"|| type == "background") {
+			ctx.drawImage(this.image,this.x,this.y,this.width, this.height);
+			if (type == "background") {
+				ctx.drawImage(this.image, this.x + this.width, this.y, this.width, this.height);
+			}
+		}else{
+		  ctx.fillStyle = color;
+		  ctx.fillRect(this.x, this.y, this.width, this.height);
+		}
+    }
+	
+	this.change=function(){
+		if(this.nome=="fatguy"){
+			this.nome="slimguy";
+			this.image.src="slimguy.png";
+		}else{
+			this.nome="fatguy";
+			this.image.src="fatguy.png";
+		}
+	}
+    this.newPos = function() {
+        this.x += this.speedX;
+        this.y += this.speedY; 		
+		if (this.type == "background") {
+		//console.log("entrou no pos")
+			if (this.x == -(this.width)) {
+				//console.log("mapa duplicado");
+				this.x = 0;
+			}
+		}
+		if(this.type == "image") {
+			this.hitBottom();
+		}
+    }  
+	this.hitBottom = function() {
+		var rockbottom = myGameArea.canvas.height - this.height;
+		var right = myGameArea.canvas.width - this.width;
+		
+		if (this.y > rockbottom) {
+			this.y = rockbottom;
+		}else if(this.y < 0){
+			this.y=0;
+		}else if(this.x < 0){
+			this.x=0;
+		}else if(this.x > right){
+			this.x=right;
+		}
+	}	
+    this.crashWith = function(otherobj) {
+        var myleft = this.x;
+        var myright = this.x + (this.width);
+        var mytop = this.y;
+        var mybottom = this.y + (this.height);
+        var otherleft = otherobj.x;
+        var otherright = otherobj.x + (otherobj.width);
+        var othertop = otherobj.y;
+        var otherbottom = otherobj.y + (otherobj.height);
+        var crash = true;
+		if ((mybottom < othertop) || (mytop > otherbottom) || (myright < otherleft) || (myleft > otherright)) {
+			crash = false;
+		}
+        return crash;
+    }
+}
+
+function updateGameArea() {
+	//console.log(document.getElementById("1").onmouseup)
+	if(isDrunk==false){
+	    window.addEventListener("keyup",clearmove,false);
+	}else{
+	    window.removeEventListener("keyup",clearmove,false);
+	    window.addEventListener("keyup",clearmove2,false);
+	}
+	window.addEventListener("keydown",moveSomething,false);
+	
+	
+    var x, height, gap, minHeight, maxHeight, minGap, maxGap;
+    for (i = 0; i < myObstacles.length; i += 1) {
+        if (myGamePiece.crashWith(myObstacles[i])) {			
+			if((myGamePiece.nome=="fatguy" && (myObstacles[i].nome=="pizza" || myObstacles[i].nome=="hamburger" ))||(myGamePiece.nome=="slimguy" && (myObstacles[i].nome=="banana" || myObstacles[i].nome=="orange" ))){	
+				gameover = new component("50px", "Arial", "Red", myGamePiece.x, myGamePiece.y, "text");
+				mySound.play();
+				gameover.text="Game Over";				
+				gameover.update();
+				myGameArea.stop();
+				playerName();
+				return;
+			}else if(myObstacles[i].nome=="beer"){
+				isDrunk=true;
+				myObstacles.splice(i, 1);
+				//document.getElementById("1").onmouseup=clearmove2();
+				//document.getElementById("2").onmouseup=clearmove2();
+				//document.getElementById("3").onmouseup=clearmove2();
+				//document.getElementById("4").onmouseup=clearmove2();
+				
+				document.getElementById("1").removeEventListener( 'mouseup', clearmove,false);
+				document.getElementById("2").removeEventListener( 'mouseup', clearmove,false);
+				document.getElementById("3").removeEventListener( 'mouseup', clearmove,false);
+				document.getElementById("4").removeEventListener( 'mouseup', clearmove,false);
+				
+				document.getElementById("1").addEventListener( 'mouseup', clearmove2,false);
+				document.getElementById("2").addEventListener( 'mouseup', clearmove2,false);
+				document.getElementById("3").addEventListener( 'mouseup', clearmove2,false);
+				document.getElementById("4").addEventListener( 'mouseup', clearmove2,false);
+			}else if(myObstacles[i].nome=="gurosan"){
+				isDrunk=false;
+				myObstacles.splice(i, 1);
+				document.getElementById("1").addEventListener( 'mouseup', clearmove,false);
+				document.getElementById("2").addEventListener( 'mouseup', clearmove,false);
+				document.getElementById("3").addEventListener( 'mouseup', clearmove,false);
+				document.getElementById("4").addEventListener( 'mouseup', clearmove,false);
+				
+			}else{
+				myObstacles.splice(i, 1);
+				myGameArea.score++;
+				speed=Math.round(myGameArea.score/2);
+				//console.log(speed);
+				myScore.text = "SCORE: " + myGameArea.score;
+				mudarPersonagem = Math.random()*9;
+				if(mudarPersonagem>4){
+					myGamePiece.change();
+				}
+			}
+        } 
+    }
+    myGameArea.clear();
+    
+	myBackground.speedX = -1; 
+	myBackground.newPos(); 
+	myBackground.update();
+    myGameArea.frameNo += 1;
+    if (myGameArea.frameNo == 1 || everyinterval(150/speed)) {
+        x = myGameArea.canvas.width;
+        y = myGameArea.canvas.height-30;
+        minLength = 20;
+        maxLength = 200;
+        length = Math.floor(Math.random()*(maxLength-minLength+1)+minLength);
+        y2 = Math.random()*y;
+       
+		//trocar o 20 para 10 para ter o modo normal
+		saudaveloufastfood = Math.floor( Math.random() * 10 );
+		umdosdois = Math.floor( Math.random() * 9 );
+		if (saudaveloufastfood>4&&saudaveloufastfood<10){
+			if(umdosdois>4){
+				myObstacles.push(new component(60, 60, "hamburger.png", x, y2,"image","hamburger"));
+			}else{
+				myObstacles.push(new component(60, 36, "pizza.png", x, y2,"image","pizza"));
+			}
+		}else if (saudaveloufastfood<4){
+			if(umdosdois>4){
+				myObstacles.push(new component(60, 49, "banana.png", x, y2,"image","banana"));
+			}else{
+				myObstacles.push(new component(60, 36, "orange.png", x, y2,"image","orange"));
+			}
+		}else{
+			if(isDrunk==false){
+			//meter isto so para quando nao tiver drunk e adicionar gurosan para quando tiver drunk 
+				myObstacles.push(new component(60, 71, "beer.png", x, y2,"image","beer"));
+			}else{
+				myObstacles.push(new component(70, 21, "gurosan.png", x, y2,"image","gurosan"));
+			}
+		}
+        
+    }
+    for (i = 0; i < myObstacles.length; i += 1) {
+        myObstacles[i].x += -speed;
+        myObstacles[i].update();
+    }
+	
+	myScore.text = "SCORE: " + myGameArea.score
+    myScore.update();
+    myGamePiece.newPos();    
+    myGamePiece.update();
+	
+}
+
+function everyinterval(n) {
+    //console.log(myGameArea.frameNo);
+    //console.log(speed);
+    if ((myGameArea.frameNo / n) % 1 == 0) {return true;}
+    return false;
+}
+
+function moveup() {
+    myGamePiece.speedY = -speed; 
+}
+
+function movedown() {
+    myGamePiece.speedY = speed; 
+}
+
+function moveleft() {
+    myGamePiece.speedX = -speed; 
+}
+
+function moveright() {
+    myGamePiece.speedX = speed; 
+}
+
+function clearmove() {
+//tirar esta funcao para aumentar o nivel de dificuldade
+    myGamePiece.speedX = 0; 
+    myGamePiece.speedY = 0; 
+}
+function clearmove2() {
+    
+}
+
+function sound(src) {
+  this.sound = document.createElement("audio");
+  this.sound.src = src;
+  this.sound.setAttribute("preload", "auto");
+  this.sound.setAttribute("controls", "none");
+  this.sound.style.display = "none";
+  document.body.appendChild(this.sound);
+  this.play = function(){
+    this.sound.play();
+  }
+  this.stop = function(){
+    this.sound.pause();
+  }
+}
+function playerName() {
+	
+  var txt;
+  var person = prompt("Por favor introduza o nome de jogador:", "Utilizador");
+  if (person == null || person == "") {
+    txt = "User cancelled the prompt.";
+  } else {
+      rate(person,myGameArea.score);
+    txt = "Hello " + person + "! How are you today?";
+  }
+  console.log(txt);
+  
+   
+  /*var con = mysql.createConnection({
+  host: "sql7.freemysqlhosting.net",
+  user: "sql7292575",
+  password: "QWTwCta42w",
+  database: "sql7292575"
+	});
+
+	con.connect(function(err) {
+	if (err) throw err;
+	console.log("Connected!");
+	var sql = "INSERT INTO HighScores (Nome, Score, Attempts) VALUES ('"+person+"',"+myGameArea.score +"')";
+	con.query(sql, function (err, result) {
+    if (err) throw err;
+		console.log("1 record inserted");
+	});
+	});*/
+}
+
+function rate(person, score)
+{
+
+   $.ajax({
+      url: 'MySQL.php',
+      type: 'post',
+      data: 'person='+person+'&score='+score,
+      success: function(output) 
+      {
+          alert('success, server says '+output);
+      }, error: function()
+      {
+          alert('something went wrong, person failed');
+      }
+   });
+
+}
+function queryHighScores(){
+	var x = document.createElement("TABLE");
+	x.style.align='center';
+	x.style.textAlign='center';
+	x.style.backgroundColor = "orange";
+	x.style.border = "1px solid #000";
+	  x.setAttribute("id", "myTable");
+	  document.body.appendChild(x);
+	  
+	  var ya = document.createElement("TR");
+	  ya.style.border = "1px solid #000";
+	  ya.setAttribute("id", "myTrTitle");
+	  document.getElementById("myTable").appendChild(ya);
+	  var za = document.createElement("TD");
+			var ta = document.createTextNode("HighScores");
+			za.style.fontWeight = 'bold';
+			za.appendChild(ta);
+	  document.getElementById("myTrTitle").appendChild(za);
+	  
+	  
+	  
+	  var y = document.createElement("TR");
+	  y.style.border = "1px solid #000";
+			y.setAttribute("id", "myTr");
+			y.style.backgroundColor = "yellow";
+			document.getElementById("myTable").appendChild(y);
+
+			var z = document.createElement("TD");
+			z.style.border = "1px solid #000";
+			var t = document.createTextNode("Nome");
+			z.appendChild(t);
+			var zu = document.createElement("TD");
+			zu.style.border = "1px solid #000";
+			var u = document.createTextNode("Score");
+			zu.appendChild(u);
+			document.getElementById("myTr").appendChild(z);
+			document.getElementById("myTr").appendChild(zu);
+
+	  
+  
+	$.ajax({
+      url: 'queryHighScores.php',
+      type: 'post',
+      data: 'nada',
+      success: function(output) 
+      {
+          console.log(output);
+		  var splitResponse = output.split('|');
+		  splitResponse.splice(-1,1)
+		  splitResponse.forEach(function(entry,index) {
+			var y = document.createElement("TR");
+			y.style.backgroundColor = "white";
+			y.setAttribute("id", "myTr"+index);
+			document.getElementById("myTable").appendChild(y);
+
+			var entrys = entry.split('-');
+			
+			var z = document.createElement("TD");	
+			z.style.border = "1px solid #000";		
+			var t = document.createTextNode(entrys[0]);
+			
+			var zu = document.createElement("TD");
+			zu.style.border = "1px solid #000";
+			var u = document.createTextNode(entrys[1]);
+			z.appendChild(t);
+			zu.appendChild(u);
+			document.getElementById("myTr"+index).appendChild(z);
+			document.getElementById("myTr"+index).appendChild(zu);
+		  });
+			
+		    
+			
+      }, error: function()
+      {
+          alert('something went wrong, person failed');
+      }
+   });
+   
+}
+function moveSomething(e) {
+    switch(e.keyCode) {
+        case 37:
+            moveleft();
+            break;
+        case 38:
+            moveup();
+            break;
+        case 39:
+            moveright();
+            break;
+        case 40:
+            movedown();
+            break;  
+    }   
+}
+</script>
+
+</body>
+</html>
